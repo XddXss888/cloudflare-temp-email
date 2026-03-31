@@ -1,6 +1,10 @@
-# Cloudflare 临时邮箱搭建
+# Cloudflare Worker 临时邮箱
 
-## 步骤
+基于 Cloudflare Workers + D1 数据库的临时邮箱服务，支持接收邮件并自动提取验证码。
+
+---
+
+## 快速开始
 
 ### 1. 创建数据库
 - Workers & Pages → D1 → Create `temp-email-db`
@@ -12,7 +16,10 @@ CREATE TABLE mails (id INTEGER PRIMARY KEY, mailbox TEXT, subject TEXT, from_add
 
 ### 2. 创建 Worker
 - Workers → Create → Hello World → `temp-email-worker`
-- Edit Code 粘贴以下代码 → Deploy
+- 粘贴下方代码
+
+<details>
+<summary>点击展开 Worker 代码</summary>
 
 ```javascript
 export default {
@@ -130,6 +137,8 @@ function json(data, status = 200) {
 }
 ```
 
+</details>
+
 ### 3. 绑定数据库
 - Settings → Bindings → Add → D1 → DB = temp-email-db
 
@@ -151,12 +160,10 @@ function json(data, status = 200) {
 
 ---
 
-## 测试 API
+## API
 
-```
-URL: https://temp-email-worker.你的账号.workers.dev
-Token: mytoken888
-```
+**地址**: `https://temp-email-worker.你的账号.workers.dev`  
+**Token**: `mytoken888`
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
@@ -166,5 +173,9 @@ Token: mytoken888
 
 ### 示例
 ```bash
+# 生成邮箱
 curl "https://temp-email-worker.你的账号.workers.dev/api/generate" -H "Authorization: Bearer mytoken888"
+
+# 查看邮件
+curl "https://temp-email-worker.你的账号.workers.dev/api/emails?mailbox=xxx@xxx.com" -H "Authorization: Bearer mytoken888"
 ```
