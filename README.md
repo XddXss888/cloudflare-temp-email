@@ -1,35 +1,64 @@
-# Cloudflare Worker 临时邮箱
+# ☁️ Cloudflare Temp Email
 
-基于 Cloudflare Workers + D1 数据库的临时邮箱服务，支持接收邮件并自动提取验证码。
+基于 Cloudflare Workers + D1 打造的临时邮箱服务，无需服务器即可快速搭建，支持接收邮件并自动提取验证码。
 
----
-
-## 功能特性
-
-- ✅ 随机生成临时邮箱地址
-- ✅ 接收并存储邮件内容
-- ✅ 自动提取邮件中的验证码 (4-8位数字字母)
-- ✅ 支持 base64 编码邮件解析
-- ✅ API 方式调用，无需前端
+[在线演示](#) · [问题反馈](https://github.com/XddXss888/cloudflare-temp-email/issues)
 
 ---
 
-## 快速开始
+## ✨ 功能特性
 
-### 1. 创建数据库
-- Workers & Pages → D1 → Create `temp-email-db`
-- Console 执行：
+| 特性 | 说明 |
+|------|------|
+| 🎲 随机邮箱 | 自动生成随机前缀的临时邮箱地址 |
+| 📬 邮件接收 | 支持接收任意邮件到指定域名 |
+| 🔐 验证码提取 | 自动从邮件内容中提取 4-8 位数字字母验证码 |
+| 🔄 Base64 支持 | 自动解析 Base64 编码的邮件内容 |
+| 🚀 无服务器 | 纯 Cloudflare Workers，无需额外服务器费用 |
+| 📱 API 驱动 | 纯 REST API 接口，易于集成 |
+
+---
+
+## 🏁 快速开始
+
+### 前置准备
+
+- Cloudflare 账号
+- 已添加至 Cloudflare 的域名
+
+### 步骤一：创建数据库
+
+1. 进入 [Cloudflare Dashboard](https://dash.cloudflare.com)
+2. Workers & Pages → D1 → Create Database
+3. 命名为 `temp-email-db`
+4. 点击数据库 → Console，执行以下 SQL：
+
 ```sql
-CREATE TABLE mail_boxes (id INTEGER PRIMARY KEY, address TEXT UNIQUE, created_at TIMESTAMP);
-CREATE TABLE mails (id INTEGER PRIMARY KEY, mailbox TEXT, subject TEXT, from_address TEXT, body TEXT, verification_code TEXT, created_at TIMESTAMP);
+CREATE TABLE mail_boxes (
+  id INTEGER PRIMARY KEY, 
+  address TEXT UNIQUE, 
+  created_at TIMESTAMP
+);
+
+CREATE TABLE mails (
+  id INTEGER PRIMARY KEY, 
+  mailbox TEXT, 
+  subject TEXT, 
+  from_address TEXT, 
+  body TEXT, 
+  verification_code TEXT, 
+  created_at TIMESTAMP
+);
 ```
 
-### 2. 创建 Worker
-- Workers → Create → Hello World → `temp-email-worker`
-- 粘贴下方代码
+### 步骤二：创建 Worker
+
+1. Workers → Create New Worker
+2. 命名为 `temp-email-worker`
+3. 粘贴下方代码后 Deploy
 
 <details>
-<summary>点击展开 Worker 代码</summary>
+<summary>📄 展开 Worker 代码</summary>
 
 ```javascript
 export default {
@@ -149,65 +178,142 @@ function json(data, status = 200) {
 
 </details>
 
-### 3. 绑定数据库
-- Settings → Bindings → Add → D1 → DB = temp-email-db
+### 步骤三：绑定数据库
 
-### 4. 设置环境变量
-| Variable | Value |
-|----------|-------|
-| FREEMAIL_TOKEN | mytoken888 |
-| DOMAINS | 你的域名 |
+Worker 详情页 → Settings → Bindings → Add → D1
 
-### 5. Email Routing
-- 域名 → Email → Enable → Catch-all → Send to Worker → temp-email-worker
+| 配置项 | 值 |
+|--------|-----|
+| Variable name | `DB` |
+| D1 database | `temp-email-db` |
 
-### 6. 添加域名记录
+### 步骤四：配置环境变量
+
+同步骤三，进入环境变量配置页面：
+
+| 配置项 | 值 | 说明 |
+|--------|-----|------|
+| `DOMAINS` | `your-domain.com` | 你的域名，多个用逗号分隔 |
+| `FREEMAIL_TOKEN` | `mytoken888` | API 访问令牌 |
+
+### 步骤五：配置邮件路由
+
+1. 进入域名 Dashboard → Email → Email Routing
+2. Enable Email Routing
+3. 创建 Catch-all 地址
+4. Send to Worker → `temp-email-worker`
+
+### 步骤六：添加 MX 记录
+
+进入域名 DNS 设置，添加以下记录：
+
 | 类型 | 名称 | 内容 | 优先级 |
 |------|------|------|--------|
-| MX | * | route1.mx.cloudflare.net | 13 |
-| MX | * | route2.mx.cloudflare.net | 40 |
-| MX | * | route3.mx.cloudflare.net | 21 |
+| MX | `@` | `route1.mx.cloudflare.net` | 13 |
+| MX | `@` | `route2.mx.cloudflare.net` | 40 |
+| MX | `@` | `route3.mx.cloudflare.net` | 21 |
+
+> 💡 如果需要支持子域名邮箱，名称填写 `*`
 
 ---
 
-## API
+## 📡 API 文档
 
-**地址**: `https://temp-email-worker.你的账号.workers.dev`  
-**Token**: `mytoken888`
+### 基础信息
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | /api/generate | 生成临时邮箱 |
-| GET | /api/emails?mailbox=xxx | 读取邮件 |
-| DELETE | /api/mailboxes?address=xxx | 删除邮箱 |
+| 配置项 | 值 |
+|--------|-----|
+| Base URL | `https://temp-email-worker.你的账号.workers.dev` |
+| 认证方式 | Bearer Token |
+| Token | `mytoken888` |
 
-### 示例
-```bash
-# 生成邮箱
-curl "https://temp-email-worker.你的账号.workers.dev/api/generate" -H "Authorization: Bearer mytoken888"
+### 接口列表
 
-# 查看邮件
-curl "https://temp-email-worker.你的账号.workers.dev/api/emails?mailbox=xxx@xxx.com" -H "Authorization: Bearer mytoken888"
+#### 生成临时邮箱
+
+```http
+GET /api/generate
 ```
 
----
-
-## 响应示例
+**响应示例：**
 
 ```json
-// GET /api/generate
 {
-  "email": "abc123@def456.example.com"
+  "email": "abc123@def456.your-domain.com"
 }
+```
 
-// GET /api/emails?mailbox=xxx
+#### 获取邮件列表
+
+```http
+GET /api/emails?mailbox=<邮箱地址>
+```
+
+**响应示例：**
+
+```json
 [
   {
-    "mailbox": "abc123@def456.example.com",
+    "mailbox": "abc123@def456.your-domain.com",
     "subject": "Your verification code",
     "from_address": "noreply@example.com",
     "verification_code": "AB1234",
-    "body": "..."
+    "body": "...",
+    "created_at": "2024-01-01T00:00:00.000Z"
   }
 ]
 ```
+
+#### 删除邮箱
+
+```http
+DELETE /api/mailboxes?address=<邮箱地址>
+```
+
+**响应示例：**
+
+```json
+{
+  "success": true
+}
+```
+
+### cURL 示例
+
+```bash
+# 生成临时邮箱
+curl -X GET "https://temp-email-worker.你的账号.workers.dev/api/generate" \
+  -H "Authorization: Bearer mytoken888"
+
+# 获取邮件
+curl -X GET "https://temp-email-worker.你的账号.workers.dev/api/emails?mailbox=abc123@def456.your-domain.com" \
+  -H "Authorization: Bearer mytoken888"
+
+# 删除邮箱
+curl -X DELETE "https://temp-email-worker.你的账号.workers.dev/api/mailboxes?address=abc123@def456.your-domain.com" \
+  -H "Authorization: Bearer mytoken888"
+```
+
+---
+
+## 📦 项目结构
+
+```
+cloudflare-temp-email/
+└── README.md    # 项目文档
+```
+
+---
+
+## ⚙️ 自定义配置
+
+| 环境变量 | 必填 | 说明 |
+|----------|------|------|
+| `DOMAINS` | ✅ | 允许接收邮件的域名，多个用逗号分隔 |
+| `FREEMAIL_TOKEN` | ✅ | API 认证令牌 |
+
+---
+
+## 📄 开源协议
+
+MIT License · 由 [XddXss888](https://github.com/XddXss888) 编写
