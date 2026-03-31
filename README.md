@@ -4,6 +4,16 @@
 
 ---
 
+## 功能特性
+
+- ✅ 随机生成临时邮箱地址
+- ✅ 接收并存储邮件内容
+- ✅ 自动提取邮件中的验证码 (4-8位数字字母)
+- ✅ 支持 base64 编码邮件解析
+- ✅ API 方式调用，无需前端
+
+---
+
 ## 快速开始
 
 ### 1. 创建数据库
@@ -178,4 +188,26 @@ curl "https://temp-email-worker.你的账号.workers.dev/api/generate" -H "Autho
 
 # 查看邮件
 curl "https://temp-email-worker.你的账号.workers.dev/api/emails?mailbox=xxx@xxx.com" -H "Authorization: Bearer mytoken888"
+```
+
+---
+
+## 响应示例
+
+```json
+// GET /api/generate
+{
+  "email": "abc123@def456.example.com"
+}
+
+// GET /api/emails?mailbox=xxx
+[
+  {
+    "mailbox": "abc123@def456.example.com",
+    "subject": "Your verification code",
+    "from_address": "noreply@example.com",
+    "verification_code": "AB1234",
+    "body": "..."
+  }
+]
 ```
